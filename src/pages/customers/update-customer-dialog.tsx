@@ -56,29 +56,48 @@ export function UpdateCustomerDialog({ customer }: UpdateCustomerProps) {
     }
 
     const payload: Customer = { name: newCustomerName, id: customer.id };
-    setCustomers((prev) => prev.map((c) => (c.id === customer.id ? payload : c)));
+    setCustomers((prev) =>
+      prev.map((c) => (c.id === customer.id ? payload : c))
+    );
 
     setRules((prevRules) =>
       prevRules.map((rule) => {
-        const needsUpdate = rule.behaviorByCustomer?.some(
-          (behavior) => behavior.customer === oldCustomerName
-        );
-
-        if (!needsUpdate || !rule.behaviorByCustomer) {
+        if (!rule.contexts || rule.contexts.length === 0) {
           return rule;
         }
 
-        const updatedBehaviors = rule.behaviorByCustomer.map((behavior) => {
-          if (behavior.customer === oldCustomerName) {
-            return { ...behavior, customer: newCustomerName };
+        const updatedContexts = rule.contexts.map((context) => {
+          const needsUpdate = context.behaviorByCustomer?.some(
+            (behavior) => behavior.customer === oldCustomerName
+          );
+
+          if (!needsUpdate || !context.behaviorByCustomer) {
+            return context;
           }
-          return behavior;
+
+          const updatedBehaviors = context.behaviorByCustomer.map(
+            (behavior) => {
+              if (behavior.customer === oldCustomerName) {
+                return { ...behavior, customer: newCustomerName };
+              }
+              return behavior;
+            }
+          );
+
+          return { ...context, behaviorByCustomer: updatedBehaviors };
         });
 
-        return { ...rule, behaviorByCustomer: updatedBehaviors };
+        const hasContextsChanged = updatedContexts.some(
+          (ctx, i) => ctx !== rule.contexts[i]
+        );
+        if (!hasContextsChanged) {
+          return rule;
+        }
+
+        return { ...rule, contexts: updatedContexts };
       })
     );
-    
+
     setOpen(false);
   }
 

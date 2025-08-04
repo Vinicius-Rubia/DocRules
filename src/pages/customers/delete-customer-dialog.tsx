@@ -34,19 +34,38 @@ export function DeleteCustomerDialog({ customer }: DeleteCustomerProps) {
 
     setRules((prevRules) =>
       prevRules.map((rule) => {
-        if (!rule.behaviorByCustomer || rule.behaviorByCustomer.length === 0) {
+        if (!rule.contexts || rule.contexts.length === 0) {
           return rule;
         }
 
-        const updatedBehaviors = rule.behaviorByCustomer.filter(
-          (behavior) => behavior.customer !== customerNameToDelete
+        const updatedContexts = rule.contexts.map((context) => {
+          if (
+            !context.behaviorByCustomer ||
+            context.behaviorByCustomer.length === 0
+          ) {
+            return context;
+          }
+
+          const updatedBehaviors = context.behaviorByCustomer.filter(
+            (behavior) => behavior.customer !== customerNameToDelete
+          );
+
+          if (updatedBehaviors.length === context.behaviorByCustomer.length) {
+            return context;
+          }
+
+          return { ...context, behaviorByCustomer: updatedBehaviors };
+        });
+
+        const hasContextsChanged = updatedContexts.some(
+          (ctx, i) => ctx !== rule.contexts[i]
         );
 
-        if (updatedBehaviors.length === rule.behaviorByCustomer.length) {
+        if (!hasContextsChanged) {
           return rule;
         }
-        
-        return { ...rule, behaviorByCustomer: updatedBehaviors };
+
+        return { ...rule, contexts: updatedContexts };
       })
     );
   };
